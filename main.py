@@ -1,58 +1,78 @@
 import streamlit as st
-import random
+import pandas as pd
+import altair as alt
+import os
 
 # -----------------------------
-# MBTI별 공부법 데이터
+# 페이지 기본 설정
 # -----------------------------
-mbti_tips = {
-    "INTJ": "📚 계획적으로 공부하면 최고 효율! 🧠 큰 그림을 그리면서 장기 목표를 세워보세요.",
-    "INFJ": "🌌 조용한 공간에서 몰입 공부 추천! ✨ 하루를 마무리하며 공부일지를 쓰면 좋아요.",
-    "ENTP": "⚡ 토론하며 공부하면 효과 만점! 🎤 문제를 친구에게 설명하는 방식으로 복습해보세요.",
-    "ENFP": "🌈 다양한 자료와 색깔펜으로 🎨 재미있게 정리하면 학습 의욕 UP!",
-    "ISTJ": "🗂️ 철저한 계획표 작성 후 체크리스트 ✅ 성취감이 동기부여가 됩니다.",
-    "ISFJ": "☕ 따뜻한 음료와 함께 차분하게 🍀 복습 위주의 공부를 추천해요.",
-    "ESTP": "🔥 짧고 강렬하게! 스톱워치로 ⏱️ 시간 제한을 두고 공부하면 집중력 상승!",
-    "ESFP": "🎶 음악과 함께 리듬타며 📖 즐겁게 공부하면 효과가 배가 됩니다.",
-    "ENTJ": "📊 목표 달성을 위한 전략적 계획 수립! 🚀 주 단위 성취도를 관리하세요.",
-    "ENFJ": "💡 함께 공부할 때 빛나는 타입 ✨ 스터디 그룹을 이끌어 보세요.",
-    "INTP": "🔍 호기심을 자극하는 탐구형 공부법! 💭 왜?라는 질문을 던지며 학습하세요.",
-    "INFP": "🌱 감성적인 몰입형 공부법 🌙 좋아하는 문구나 글귀와 함께 공부하면 효과적!",
-    "ISTP": "🛠️ 실습 위주의 공부 추천! 🎮 직접 문제를 풀거나 체험하며 학습하세요.",
-    "ISFP": "🎨 감각적이고 편안한 분위기 🌸 아늑한 공간에서 시각 자료로 공부하면 좋아요.",
-    "ESTJ": "📅 계획적, 체계적 학습 🏆 명확한 규칙을 정하고 성과를 점검하세요.",
-    "ESFJ": "🤝 친구와 함께 즐겁게 👭 서로 가르쳐주며 공부하면 오래 기억됩니다."
-}
+st.set_page_config(page_title="MBTI 국가별 TOP10 시각화", page_icon="🌍", layout="centered")
+
+st.title("🌍 국가별 MBTI 유형 비율 TOP10")
+st.markdown("업로드된 데이터를 바탕으로 MBTI 유형별로 **비율이 가장 높은 국가 10개**를 확인할 수 있어요 ✨")
 
 # -----------------------------
-# 스트림릿 UI
+# 데이터 불러오기 함수
 # -----------------------------
+@st.cache_data
+def load_data(file):
+    return pd.read_csv(file)
 
-st.set_page_config(page_title="MBTI 공부법 추천", page_icon="📖", layout="centered")
+data_file = "countriesMBTI_16types.csv"
 
-st.title("✨ MBTI 공부법 추천기 📖")
-st.markdown("공부 스타일을 MBTI와 연결해드립니다! 🚀")
+# -----------------------------
+# 데이터 로드
+# -----------------------------
+if os.path.exists(data_file):
+    df = load_data(data_file)
+    st.success(f"✅ 기본 데이터 파일을 불러왔습니다: {data_file}")
+else:
+    uploaded_file = st.file_uploader("📂 데이터 파일을 업로드하세요 (CSV)", type=["csv"])
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+        st.success("✅ 업로드한 파일을 불러왔습니다.")
+    else:
+        st.warning("⚠️ 데이터 파일이 필요합니다. CSV 파일을 업로드해주세요.")
+        st.stop()
 
-# 효과: 풍선 버튼
-if st.button("🎉 기분전환 풍선 날리기"):
-    st.balloons()
+# -----------------------------
+# MBTI 유형 리스트
+# -----------------------------
+mbti_types = ["INFJ","ISFJ","INTP","ISFP","ENTP","INFP","ENTJ","INTJ",
+              "ESFP","ESTJ","ENFP","ESTP","ISTJ","ENFJ","ESFJ","ISTP"]
 
+# -----------------------------
 # MBTI 선택
-selected_mbti = st.selectbox("당신의 MBTI는 무엇인가요?", list(mbti_tips.keys()))
+# -----------------------------
+selected_mbti = st.selectbox("🔎 확인하고 싶은 MBTI 유형을 선택하세요:", mbti_types)
 
-# 추천 공부법 출력
-if selected_mbti:
-    st.subheader(f"📌 {selected_mbti} 유형에게 딱 맞는 공부법:")
-    st.success(mbti_tips[selected_mbti])
+# -----------------------------
+# TOP10 국가 추출
+# -----------------------------
+top10 = df[["Country", selected_mbti]].sort_values(by=selected_mbti, ascending=False).head(10)
 
-    # 랜덤 응원 메시지
-    cheers = [
-        "🔥 오늘도 화이팅!",
-        "💪 너라면 할 수 있어!",
-        "🌟 작은 성취가 모여 큰 변화를 만든다!",
-        "🚀 시작이 반이다!"
-    ]
-    st.info(random.choice(cheers))
+# -----------------------------
+# Altair 차트 생성
+# -----------------------------
+chart = (
+    alt.Chart(top10)
+    .mark_bar(color="teal")
+    .encode(
+        x=alt.X(selected_mbti, title=f"{selected_mbti} 비율", scale=alt.Scale(domain=[0, top10[selected_mbti].max()*1.1])),
+        y=alt.Y("Country", sort="-x", title="국가"),
+        tooltip=["Country", selected_mbti]
+    )
+    .interactive()
+)
+
+st.altair_chart(chart, use_container_width=True)
+
+# -----------------------------
+# 데이터 테이블 보기 옵션
+# -----------------------------
+with st.expander("📊 TOP10 데이터 보기"):
+    st.dataframe(top10.reset_index(drop=True))
 
 # 푸터
 st.markdown("---")
-st.caption("만든이: 당신의 AI 공부도우미 🤖")
+st.caption("✨ 데이터 기반 MBTI 국가 비교 | 만든이: 당신의 AI 도우미 🤖")
